@@ -43,7 +43,7 @@ docker-compose up -d tdengine
 Create test database
 
 ```sh
-docker-compose exec tdengine -c "create database if not exists test"
+docker-compose exec tdengine taos -s "create database if not exists test"
 ```
 
 Build go producer and consumer.
