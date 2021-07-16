@@ -39,5 +39,15 @@ func TestToSql(t *testing.T) {
 	sql, err := ToTaosInsertSql(&raw)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, sql, "insert into abc values('abc',18)")
+}
 
+func BenchmarkToTaosRecordSql(b *testing.B) {
+	raw :=
+		testRecord{
+			Name: "abc",
+			Age:  18,
+		}
+	for i := 0; i < b.N; i++ {
+		ToTaosRecordSql(&raw)
+	}
 }

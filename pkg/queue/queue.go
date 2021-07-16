@@ -126,19 +126,19 @@ func (q *Queue) Pause() {
 }
 
 // Check if batchable or not
-func (q *Queue) is_batchable() bool {
-	return q.enqueued >= q.dequeued+uint64(q.MaxBatchSize())
+func (q *Queue) isBatchable() bool {
+	return q.enqueued >= q.dequeued+uint64(q.MaxBatchSize()) && q.enqueued > 0
 }
 
 /// Increase message count enqueued
-func (q *Queue) enqueued_with(size uint64) uint64 {
+func (q *Queue) enqueuedWith(size uint64) uint64 {
 	q.enqueued += size
 	// q.poll_batchable()
 	return q.enqueued
 }
 
 /// Incerase message count dequeued
-func (q *Queue) dequeued_with(size uint64) uint64 {
+func (q *Queue) dequeuedWith(size uint64) uint64 {
 	q.dequeued += size
 	// q.poll_batchable()
 	return q.dequeued
@@ -155,7 +155,7 @@ func (q *Queue) EnqueueOnce(msg interface{}) (bool, error) {
 		return false, ErrQueueFull
 	}
 	q.queue <- msg
-	q.enqueued_with(1)
+	q.enqueuedWith(1)
 	return true, nil
 }
 
@@ -171,7 +171,7 @@ func (q *Queue) Enqueue(msgs ...interface{}) (int, error) {
 		for _, msg := range msgs {
 			q.queue <- msg
 		}
-		q.enqueued_with(uint64(add))
+		q.enqueuedWith(uint64(add))
 		return 0, nil
 	} else {
 		success := 0
@@ -181,7 +181,7 @@ func (q *Queue) Enqueue(msgs ...interface{}) (int, error) {
 			}
 			q.queue <- msg
 			success++
-			q.enqueued_with(1)
+			q.enqueuedWith(1)
 		}
 		// log.Printf("Queue size: %v, chan len: %v", q.Size(), len(q.queue))
 		return add, nil
@@ -195,7 +195,7 @@ func (q *Queue) takeOne() (interface{}, error) {
 		return nil, ErrQueueEmpty
 	}
 	i := <-q.queue
-	q.dequeued_with(1)
+	q.dequeuedWith(1)
 	return i, nil
 }
 
@@ -218,7 +218,7 @@ func (q *Queue) takeBatch(batchSize int, allowPartialDequeue bool) ([]interface{
 		item := <-q.queue
 		msgs[i] = item
 	}
-	q.dequeued_with(uint64(size))
+	q.dequeuedWith(uint64(size))
 	return msgs, nil
 }
 
@@ -258,7 +258,7 @@ func (q *Queue) Dequeue() ([]interface{}, error) {
 		go func(ch chan bool) {
 			for {
 				runtime.Gosched()
-				if q.is_batchable() {
+				if q.isBatchable() && !q.IsEmpty() {
 					// log.Printf("batchable now!")
 					ch <- true
 				}

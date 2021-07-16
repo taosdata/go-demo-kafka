@@ -39,6 +39,10 @@ func DefaultConfig() *Config {
 	return &GlobalConfig
 }
 
+func (c *Config) FlagInit() {
+
+}
+
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 func RandomString(n int) string {
@@ -62,16 +66,16 @@ func (c *Config) randomRecord(t int, r int) Record {
 }
 
 func (c *Config) Records() chan Record {
-	record_c := make(chan Record)
+	ch := make(chan Record)
 	go func() {
 		for r := 0; r < c.RecordsPerTable; r++ {
 			for t := 0; t < c.Tables; t++ {
-				record_c <- c.randomRecord(t, r)
+				ch <- c.randomRecord(t, r)
 			}
 		}
-		close(record_c)
+		close(ch)
 	}()
-	return record_c
+	return ch
 }
 
 func (c *Config) tableName() string {

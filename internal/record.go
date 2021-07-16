@@ -1,18 +1,23 @@
 package record
 
 import (
+	"hash/fnv"
 	"time"
 
 	"github.com/taosdata/go-demo-kafka/pkg/utils"
 )
 
+// Record is the structual message object detail, provide both Codec and TaosEncoder interface.
 type Record struct {
-	DeviceID  string // for table name
-	Timestamp time.Time
-	Cols      []interface{}
+	DeviceID  string        `json:"deviceID"` // for table name
+	Timestamp time.Time     `json:"timestamp"`
+	Cols      []interface{} `json:"cols"`
 }
 
-// TDengineEncoder methods
+// Change max partitions as you need.
+const MAX_PARTITIONS = 10
+
+// TaosEncoder implementations
 
 // If this is setted, sql will use db.table for tablename
 func (r Record) TaosDatabase() string {
@@ -50,6 +55,16 @@ func (r Record) TaosValues() []interface{} {
 	return values
 }
 
+// Codec interface
+
+// Encoding method
 func (r Record) CodecMethod() utils.CodecMethodEnum {
 	return utils.MessagePack
+}
+
+// How to set partition for an message
+func (r Record) Partition() int32 {
+	h := fnv.New32a()
+	h.Write([]byte(r.DeviceID))
+	return int32(h.Sum32() % MAX_PARTITIONS)
 }

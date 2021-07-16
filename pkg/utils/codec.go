@@ -1,13 +1,13 @@
 package utils
 
 import (
-	"encoding/json"
 	"errors"
 
+	"github.com/taosdata/go-demo-kafka/pkg/utils/json"
 	"github.com/vmihailenco/msgpack/v5"
 )
 
-var ErrUnsupportCodec = errors.New("Unsupported codec")
+var ErrUnsupportCodec = errors.New("unsupported codec")
 
 type CodecMethodEnum int
 
@@ -18,6 +18,7 @@ const (
 
 type Codec interface {
 	CodecMethod() CodecMethodEnum
+	Partition() int32
 }
 
 func ToKafkaBytes(k Codec) ([]byte, error) {

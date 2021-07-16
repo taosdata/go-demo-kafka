@@ -26,16 +26,16 @@ func main() {
 		fmt.Printf("failed to connect TDengine, err:%v\n", err)
 		return
 	}
-	sql := recordConfig.DropTableSql()
-	_, err = taos.Exec(sql)
+	sqlStr := recordConfig.DropTableSql()
+	_, err = taos.Exec(sqlStr)
 	if err != nil {
-		fmt.Printf("failed to drop stable, err:%v\n%s\n", err, sql)
+		fmt.Printf("failed to drop stable, err:%v\n%s\n", err, sqlStr)
 		return
 	}
-	sql = recordConfig.CreateTableSql()
-	_, err = taos.Exec(sql)
+	sqlStr = recordConfig.CreateTableSql()
+	_, err = taos.Exec(sqlStr)
 	if err != nil {
-		fmt.Printf("failed to create stable, err:%v\n%s\n", err, sql)
+		fmt.Printf("failed to create stable, err:%v\n%s\n", err, sqlStr)
 		return
 	}
 	config := sarama.NewConfig()
@@ -51,8 +51,7 @@ func main() {
 	defer producer.Close()
 
 	msg := &sarama.ProducerMessage{
-		Topic:     "test",
-		Partition: -1,
+		Topic: "test",
 	}
 
 	go func() {
@@ -72,7 +71,12 @@ func main() {
 		// go func(record utils.Codec) {
 		data, _ := utils.ToKafkaBytes(record)
 		msg.Value = sarama.ByteEncoder(data)
-		_, _, err := producer.SendMessage(msg)
+		msg.Partition = record.Partition()
+		partition, _, err := producer.SendMessage(msg)
+
+		if msg.Partition != partition {
+			fmt.Println("partition not match:", msg.Partition, "-", partition)
+		}
 
 		if err != nil {
 			fmt.Printf("%s error occured.", err.Error())
